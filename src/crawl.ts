@@ -9,23 +9,33 @@ export function normalizeURL(url: string): string {
   return hostPath;
 }
 
-export function getURLsFromHTML(htmlBody: string, baseURL: string): string[] {
+export async function getURLsFromHTML(
+  htmlBody: string,
+  baseURL: string
+): Promise<string[]> {
   const urls: string[] = [];
-  const dom = new JSDOM(htmlBody);
-  const anchorElements = dom.window.document.querySelectorAll("a");
-  for (const anchorElement of anchorElements) {
-    if (anchorElement.href.slice(0, 1) === "/") {
-      try {
-        const urlObj = new URL(`${baseURL}${anchorElement.href}`);
-        urls.push(urlObj.href);
-      } catch (e) {}
-    } else {
-      try {
-        const urlObj = new URL(anchorElement.href);
-        urls.push(urlObj.href);
-      } catch (e) {}
-    }
-  }
+
+  await new HTMLRewriter()
+    .on("a", {
+      element(el) {
+        const href = el.getAttribute("href");
+        if (href) {
+          if (href.slice(0, 1) === "/") {
+            try {
+              const urlObj = new URL(`${baseURL}${href}`);
+              urls.push(urlObj.href);
+            } catch (e) {}
+          } else {
+            try {
+              const urlObj = new URL(href);
+              urls.push(urlObj.href);
+            } catch (e) {}
+          }
+        }
+      },
+    })
+    .transform(htmlBody);
+
   return urls;
 }
 
@@ -56,7 +66,7 @@ export async function crawlPage(
       return pages;
     }
     const htmlBody = await res.text();
-    const nextUrls = getURLsFromHTML(htmlBody, baseURL);
+    const nextUrls = await getURLsFromHTML(htmlBody, baseURL);
     for (const nextUrl of nextUrls) {
       pages = await crawlPage(baseURL, nextUrl, pages);
     }

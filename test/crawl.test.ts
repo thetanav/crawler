@@ -29,7 +29,7 @@ test("normalizeURL strip http", () => {
   expect(actual).toEqual(expected);
 });
 
-test("getURLsFromHTML absolute", () => {
+test("getURLsFromHTML absolute", async () => {
   const inputHTML = `
     <html>
         <body>
@@ -39,12 +39,12 @@ test("getURLsFromHTML absolute", () => {
     </html>
   `;
   const inputURL = "https://blog.tanav.dev";
-  const actual = getURLsFromHTML(inputHTML, inputURL);
+  const actual = await getURLsFromHTML(inputHTML, inputURL);
   const expected = ["blog.tanav.dev/2025", "external.com/page"];
   expect(actual).toEqual(expected);
 });
 
-test("getURLsFromHTML relative", () => {
+test("getURLsFromHTML relative", async () => {
   const inputHTML = `
     <html>
         <body>
@@ -54,12 +54,12 @@ test("getURLsFromHTML relative", () => {
     </html>
   `;
   const inputURL = "https://blog.tanav.dev";
-  const actual = getURLsFromHTML(inputHTML, inputURL);
+  const actual = await getURLsFromHTML(inputHTML, inputURL);
   const expected = ["blog.tanav.dev/about", "blog.tanav.dev/contact"];
   expect(actual).toEqual(expected);
 });
 
-test("getURLsFromHTML both", () => {
+test("getURLsFromHTML both", async () => {
   const inputHTML = `
     <html>
         <body>
@@ -71,7 +71,7 @@ test("getURLsFromHTML both", () => {
     </html>
   `;
   const inputURL = "https://blog.tanav.dev";
-  const actual = getURLsFromHTML(inputHTML, inputURL);
+  const actual = await getURLsFromHTML(inputHTML, inputURL);
   const expected = [
     "blog.tanav.dev/2025",
     "external.com/page",
