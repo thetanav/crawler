@@ -15,9 +15,13 @@ function main() {
   let baseURL = args[0] as string;
   console.log("Starting crawl of", baseURL);
 
+  const startTime = performance.now();
   crawlPage(baseURL, baseURL, {}).then((pages) => {
-    console.log("Crawl complete. Pages found:");
+    const endTime = performance.now();
+    const timeTaken = (endTime - startTime) / 1000;
+    console.log(`Crawl complete in ${timeTaken.toFixed(2)}s. Pages found:`);
     console.log(pages);
+    Bun.write("report.json", JSON.stringify(pages, null, 2));
   });
 }
 
