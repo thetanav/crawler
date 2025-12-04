@@ -23,12 +23,12 @@ export async function getURLsFromHTML(
           if (href.slice(0, 1) === "/") {
             try {
               const urlObj = new URL(`${baseURL}${href}`);
-              urls.push(urlObj.href);
+              urls.push(normalizeURL(urlObj.href));
             } catch (e) {}
           } else {
             try {
               const urlObj = new URL(href);
-              urls.push(urlObj.href);
+              urls.push(normalizeURL(urlObj.href));
             } catch (e) {}
           }
         }
@@ -67,9 +67,9 @@ export async function crawlPage(
     }
     const htmlBody = await res.text();
     const nextUrls = await getURLsFromHTML(htmlBody, baseURL);
-    for (const nextUrl of nextUrls) {
-      pages = await crawlPage(baseURL, nextUrl, pages);
-    }
+    await Promise.all(
+      nextUrls.map((nextUrl) => crawlPage(baseURL, nextUrl, pages))
+    );
   } catch (e) {}
   return pages;
 }

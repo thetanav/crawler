@@ -81,7 +81,7 @@ test("getURLsFromHTML both", async () => {
   expect(actual).toEqual(expected);
 });
 
-test("getURLsFromHTML invalid", () => {
+test("getURLsFromHTML invalid", async () => {
   const inputHTML = `
     <html>
         <body>
@@ -90,7 +90,7 @@ test("getURLsFromHTML invalid", () => {
     </html>
   `;
   const inputURL = "https://blog.tanav.dev";
-  const actual = getURLsFromHTML(inputHTML, inputURL);
+  const actual = await getURLsFromHTML(inputHTML, inputURL);
   const expected: any = [];
   expect(actual).toEqual(expected);
 });
