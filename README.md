@@ -1,5 +1,7 @@
 # Web Crawler
 
+![screenrecording-2025-12-05_20-19-44-ezgif com-video-to-gif-converter](https://github.com/user-attachments/assets/9da7b9b3-c11f-4041-9df1-a050641c3596)
+
 A fast and efficient web crawler built with Bun and TypeScript that can crawl websites and perform Google-like search on the crawled content.
 
 ## Features
