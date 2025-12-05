@@ -16,12 +16,10 @@ export async function getURLsFromHTML(htmlBody: string, baseURL: string) {
       element(el) {
         let href = el.getAttribute("href");
         if (href) {
-          console.log("Found href:", href);
           if (href[0] === "/") {
             if (href.length > 1 && href.endsWith("/")) {
               href = href.slice(0, -1);
             }
-            console.log("Found relative URL:", href);
             try {
               const urlObj = new URL(`${baseURL}${href}`);
               urls.push(urlObj.href);

@@ -19,8 +19,19 @@ function main() {
   crawlPage(baseURL, baseURL, {}).then((pages) => {
     const endTime = performance.now();
     const timeTaken = (endTime - startTime) / 1000;
-    console.log(`Crawl complete in ${timeTaken.toFixed(2)}s. Pages found:`);
-    console.log(pages);
+    console.log("\n################################");
+    console.log(
+      `Time taken ${timeTaken.toFixed(2)}s. Pages found: ${
+        Object.keys(pages).length
+      }`
+    );
+    console.log(
+      "Pages/sec:",
+      (Object.keys(pages).length / timeTaken).toFixed(2)
+    );
+    // console.log(pages);
+    console.log("report saved to report.json");
+    console.log("################################");
     Bun.write("report.json", JSON.stringify(pages, null, 2));
   });
 }
