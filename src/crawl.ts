@@ -11,6 +11,8 @@ export function normalizeURL(url: string): string {
 
 export async function getURLsFromHTML(htmlBody: string, baseURL: string) {
   const urls: string[] = [];
+  // Ensure baseURL doesn't end with a slash for proper concatenation
+  const base = baseURL.endsWith("/") ? baseURL.slice(0, -1) : baseURL;
   await new HTMLRewriter()
     .on("a", {
       element(el) {
@@ -21,7 +23,7 @@ export async function getURLsFromHTML(htmlBody: string, baseURL: string) {
               href = href.slice(0, -1);
             }
             try {
-              const urlObj = new URL(`${baseURL}${href}`);
+              const urlObj = new URL(href, base);
               urls.push(urlObj.href);
             } catch (e) {}
           } else {
@@ -46,37 +48,50 @@ export async function crawlPage(
   currentURL: string,
   pages: any
 ) {
-  const baseURLObj = new URL(baseURL);
-  const currentURLObj = new URL(currentURL);
-  if (baseURLObj.hostname !== currentURLObj.hostname) {
-    return pages;
-  }
-  const normalizedCurrentURL = normalizeURL(currentURL);
-  if (pages[normalizedCurrentURL] > 0) {
-    pages[normalizedCurrentURL]++;
-    return pages;
-  }
-  pages[normalizedCurrentURL] = 1;
-  // console.log("Crawling page:", currentURL);
-  try {
-    const res = await fetch(currentURL);
-    if (res.status > 399) {
-      console.error("Error fetching page:", res.status, currentURL);
-      return pages;
-    }
-    const contentType = res.headers.get("content-type");
-    if (!contentType || !contentType.includes("text/html")) {
-      console.error("Non-HTML content, skipping:", contentType, currentURL);
-      return pages;
-    }
-    const htmlBody = await res.text();
-    if (baseURL.length > 1 && baseURL.endsWith("/")) {
-      baseURL = baseURL.slice(0, -1);
-    }
-    const nextUrls = await getURLsFromHTML(htmlBody, baseURL);
+  const queue = [currentURL];
+  while (queue.length > 0) {
+    const currentLevel = [...queue];
+    queue.length = 0;
     await Promise.all(
-      nextUrls.map((nextUrl) => crawlPage(baseURL, nextUrl, pages))
+      currentLevel.map(async (current) => {
+        const baseURLObj = new URL(baseURL);
+        const currentURLObj = new URL(current);
+        if (baseURLObj.hostname !== currentURLObj.hostname) {
+          return;
+        }
+        const normalizedCurrentURL = normalizeURL(current);
+        if (pages[normalizedCurrentURL] > 0) {
+          pages[normalizedCurrentURL]++;
+          return;
+        }
+        pages[normalizedCurrentURL] = 1;
+        // console.log("Crawling page:", current);
+        try {
+          const res = await fetch(current);
+          if (res.status > 399) {
+            console.error("Error fetching page:", res.status, current);
+            return;
+          }
+          const contentType = res.headers.get("content-type");
+          if (!contentType || !contentType.includes("text/html")) {
+            console.error("Non-HTML content, skipping:", contentType, current);
+            return;
+          }
+          const htmlBody = await res.text();
+          let base = baseURL;
+          if (base.length > 1 && base.endsWith("/")) {
+            base = base.slice(0, -1);
+          }
+          const nextUrls = await getURLsFromHTML(htmlBody, base);
+          for (const nextUrl of nextUrls) {
+            const normalizedNext = normalizeURL(nextUrl);
+            if (!pages[normalizedNext]) {
+              queue.push(nextUrl);
+            }
+          }
+        } catch (e) {}
+      })
     );
-  } catch (e) {}
+  }
   return pages;
 }
