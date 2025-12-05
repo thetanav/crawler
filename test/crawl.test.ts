@@ -40,7 +40,7 @@ test("getURLsFromHTML absolute", async () => {
   `;
   const inputURL = "https://blog.tanav.dev";
   const actual = await getURLsFromHTML(inputHTML, inputURL);
-  const expected = ["blog.tanav.dev/2025", "external.com/page"];
+  const expected = ["https://blog.tanav.dev/2025", "https://external.com/page"];
   expect(actual).toEqual(expected);
 });
 
@@ -55,7 +55,10 @@ test("getURLsFromHTML relative", async () => {
   `;
   const inputURL = "https://blog.tanav.dev";
   const actual = await getURLsFromHTML(inputHTML, inputURL);
-  const expected = ["blog.tanav.dev/about", "blog.tanav.dev/contact"];
+  const expected = [
+    "https://blog.tanav.dev/about",
+    "https://blog.tanav.dev/contact",
+  ];
   expect(actual).toEqual(expected);
 });
 
@@ -73,10 +76,10 @@ test("getURLsFromHTML both", async () => {
   const inputURL = "https://blog.tanav.dev";
   const actual = await getURLsFromHTML(inputHTML, inputURL);
   const expected = [
-    "blog.tanav.dev/2025",
-    "external.com/page",
-    "blog.tanav.dev/about",
-    "blog.tanav.dev/contact",
+    "https://blog.tanav.dev/2025",
+    "https://external.com/page",
+    "https://blog.tanav.dev/about",
+    "https://blog.tanav.dev/contact",
   ];
   expect(actual).toEqual(expected);
 });
