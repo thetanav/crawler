@@ -68,14 +68,18 @@ export async function getURLsFromHTML(htmlBody: string, baseURL: string) {
 export async function crawlPage(
   baseURL: string,
   currentURL: string,
-  pages: SearchIndex
+  pages: SearchIndex,
+  limit: number = 100
 ): Promise<SearchIndex> {
   const queue = [currentURL];
-  while (queue.length > 0) {
+  while (queue.length > 0 && Object.keys(pages).length < limit) {
     const currentLevel = [...queue];
     queue.length = 0;
     await Promise.all(
       currentLevel.map(async (current) => {
+        if (Object.keys(pages).length >= limit) {
+          return;
+        }
         const baseURLObj = new URL(baseURL);
         const currentURLObj = new URL(current);
         if (baseURLObj.hostname !== currentURLObj.hostname) {

@@ -35,19 +35,30 @@ async function main() {
 
   if (args.length < 1) {
     console.error("Usage:");
-    console.error("  Crawl:         bun index.ts <url>");
-    console.error("  Crawl+Search:  bun index.ts <url> <search query>");
+    console.error("  Crawl:         bun index.ts <url> [--limit=N]");
+    console.error(
+      "  Crawl+Search:  bun index.ts <url> <search query> [--limit=N]"
+    );
+    console.error("\nDefault limit: 100 pages");
     return;
   }
 
-  const baseURL = args[0] as string;
-  const searchQuery = args.slice(1).join(" ");
+  // Parse --limit argument
+  let limit = 100;
+  const limitArg = args.find((arg) => arg.startsWith("--limit="));
+  if (limitArg) {
+    limit = parseInt(limitArg.split("=")[1] ?? "100", 10) || 100;
+  }
+
+  const filteredArgs = args.filter((arg) => !arg.startsWith("--limit="));
+  const baseURL = filteredArgs[0] as string;
+  const searchQuery = filteredArgs.slice(1).join(" ");
 
   // Always crawl first
-  console.log("Starting crawl of", baseURL);
+  console.log(`Starting crawl of ${baseURL} (limit: ${limit} pages)`);
 
   const startTime = performance.now();
-  const pages = await crawlPage(baseURL, baseURL, {});
+  const pages = await crawlPage(baseURL, baseURL, {}, limit);
   const endTime = performance.now();
   const timeTaken = (endTime - startTime) / 1000;
 
@@ -67,7 +78,7 @@ async function main() {
   await Bun.write("report.json", JSON.stringify(pages, null, 2));
 
   // Save title-to-URL mapping for Google-like search
-  await Bun.write("title-mapping.json", JSON.stringify(titleMapping, null, 2));
+  await Bun.write("titles.json", JSON.stringify(titleMapping, null, 2));
 
   // If search query provided, search immediately after crawling
   if (searchQuery) {
