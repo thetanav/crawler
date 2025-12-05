@@ -1,39 +1,78 @@
-import { crawlPage } from "./src/crawl";
+import { crawlPage, getTitleMapping, searchPages } from "./src/crawl";
+import type { SearchIndex } from "./src/crawl";
 
-function main() {
+function displaySearchResults(pages: SearchIndex, searchQuery: string) {
+  const results = searchPages(pages, searchQuery);
+
+  if (results.length === 0) {
+    console.log(`No results found for "${searchQuery}"`);
+    return;
+  }
+
+  // Show top 10 most relevant results
+  const topResults = results.slice(0, 10);
+  const totalResults = results.length;
+
+  console.log(`\n🔍 Search results for "${searchQuery}":\n`);
+  console.log("─".repeat(60));
+
+  topResults.forEach((page, index) => {
+    console.log(`\n${index + 1}. ${page.title}`);
+    console.log(`   📎 ${page.url}`);
+    console.log(`   (Found ${page.count} time${page.count > 1 ? "s" : ""})`);
+  });
+
+  console.log("\n" + "─".repeat(60));
+  if (totalResults > 10) {
+    console.log(`Showing top 10 of ${totalResults} results`);
+  } else {
+    console.log(`Total: ${totalResults} result${totalResults > 1 ? "s" : ""}`);
+  }
+}
+
+async function main() {
   const args = Bun.argv.slice(2);
 
   if (args.length < 1) {
-    console.error("Please provide a URL as an argument");
-    return;
-  }
-  if (args.length > 1) {
-    console.error("Too many arguments provided");
+    console.error("Usage:");
+    console.error("  Crawl:         bun index.ts <url>");
+    console.error("  Crawl+Search:  bun index.ts <url> <search query>");
     return;
   }
 
-  let baseURL = args[0] as string;
+  const baseURL = args[0] as string;
+  const searchQuery = args.slice(1).join(" ");
+
+  // Always crawl first
   console.log("Starting crawl of", baseURL);
 
   const startTime = performance.now();
-  crawlPage(baseURL, baseURL, {}).then((pages) => {
-    const endTime = performance.now();
-    const timeTaken = (endTime - startTime) / 1000;
-    console.log("\n################################");
-    console.log(
-      `Time taken ${timeTaken.toFixed(2)}s. Pages found: ${
-        Object.keys(pages).length
-      }`
-    );
-    console.log(
-      "Pages/sec:",
-      (Object.keys(pages).length / timeTaken).toFixed(2)
-    );
-    // console.log(pages);
-    console.log("report saved to report.json");
-    console.log("################################");
-    Bun.write("report.json", JSON.stringify(pages, null, 2));
-  });
+  const pages = await crawlPage(baseURL, baseURL, {});
+  const endTime = performance.now();
+  const timeTaken = (endTime - startTime) / 1000;
+
+  // Generate title-to-URL mapping for search
+  const titleMapping = getTitleMapping(pages);
+
+  console.log("\n################################");
+  console.log(
+    `Time taken ${timeTaken.toFixed(2)}s. Pages found: ${
+      Object.keys(pages).length
+    }`
+  );
+  console.log("Pages/sec:", (Object.keys(pages).length / timeTaken).toFixed(2));
+  console.log("################################");
+
+  // Save full report with titles
+  await Bun.write("report.json", JSON.stringify(pages, null, 2));
+
+  // Save title-to-URL mapping for Google-like search
+  await Bun.write("title-mapping.json", JSON.stringify(titleMapping, null, 2));
+
+  // If search query provided, search immediately after crawling
+  if (searchQuery) {
+    displaySearchResults(pages, searchQuery);
+  }
 }
 
 main();

@@ -1,5 +1,15 @@
 import { JSDOM } from "jsdom";
 
+export interface PageInfo {
+  url: string;
+  title: string;
+  count: number;
+}
+
+export interface SearchIndex {
+  [normalizedUrl: string]: PageInfo;
+}
+
 export function normalizeURL(url: string): string {
   const urlObj = new URL(url);
   const hostPath = `${urlObj.hostname}${urlObj.pathname}`;
@@ -7,6 +17,18 @@ export function normalizeURL(url: string): string {
     return hostPath.slice(0, -1);
   }
   return hostPath;
+}
+
+export async function getPageTitle(htmlBody: string): Promise<string> {
+  let title = "";
+  await new HTMLRewriter()
+    .on("title", {
+      text(text) {
+        title += text.text;
+      },
+    })
+    .transform(htmlBody);
+  return title.trim() || "Untitled";
 }
 
 export async function getURLsFromHTML(htmlBody: string, baseURL: string) {
@@ -46,8 +68,8 @@ export async function getURLsFromHTML(htmlBody: string, baseURL: string) {
 export async function crawlPage(
   baseURL: string,
   currentURL: string,
-  pages: any
-) {
+  pages: SearchIndex
+): Promise<SearchIndex> {
   const queue = [currentURL];
   while (queue.length > 0) {
     const currentLevel = [...queue];
@@ -60,24 +82,29 @@ export async function crawlPage(
           return;
         }
         const normalizedCurrentURL = normalizeURL(current);
-        if (pages[normalizedCurrentURL] > 0) {
-          pages[normalizedCurrentURL]++;
+        if (pages[normalizedCurrentURL]) {
+          pages[normalizedCurrentURL].count++;
           return;
         }
-        pages[normalizedCurrentURL] = 1;
         // console.log("Crawling page:", current);
         try {
           const res = await fetch(current);
           if (res.status > 399) {
-            console.error("Error fetching page:", res.status, current);
             return;
           }
           const contentType = res.headers.get("content-type");
           if (!contentType || !contentType.includes("text/html")) {
-            console.error("Non-HTML content, skipping:", contentType, current);
             return;
           }
           const htmlBody = await res.text();
+          const title = await getPageTitle(htmlBody);
+
+          pages[normalizedCurrentURL] = {
+            url: current,
+            title: title,
+            count: 1,
+          };
+
           let base = baseURL;
           if (base.length > 1 && base.endsWith("/")) {
             base = base.slice(0, -1);
@@ -94,4 +121,43 @@ export async function crawlPage(
     );
   }
   return pages;
+}
+
+// Search function to find pages by title (Google-like search)
+export function searchPages(pages: SearchIndex, query: string): PageInfo[] {
+  const queryLower = query.toLowerCase();
+  const results: PageInfo[] = [];
+
+  for (const key in pages) {
+    const page = pages[key];
+    // Check if page has the new format with title property
+    if (page && typeof page === "object" && page.title) {
+      if (page.title.toLowerCase().includes(queryLower)) {
+        results.push(page);
+      }
+    }
+  }
+
+  // Sort by relevance (exact match first, then by count)
+  return results.sort((a, b) => {
+    const aExact = a.title.toLowerCase() === queryLower;
+    const bExact = b.title.toLowerCase() === queryLower;
+    if (aExact && !bExact) return -1;
+    if (!aExact && bExact) return 1;
+    return b.count - a.count;
+  });
+}
+
+// Get title-to-URL mapping for easy lookup
+export function getTitleMapping(pages: SearchIndex): {
+  [title: string]: string;
+} {
+  const mapping: { [title: string]: string } = {};
+  for (const key in pages) {
+    const page = pages[key];
+    if (page) {
+      mapping[page.title] = page.url;
+    }
+  }
+  return mapping;
 }
