@@ -76,38 +76,96 @@ Example output:
 Total: 2 results
 ```
 
-## Performance
+## Searching Crawled Data
 
-The crawler is optimized for speed:
+Start the web server to access the minimal, Google-inspired search interface:
 
-- Concurrent page fetching
-- Efficient URL normalization
-- Minimal memory footprint
-
-Example performance on boot.dev:
-
+```bash
+bun run server
 ```
-Time taken 2.34s. Pages found: 87
-Pages/sec: 37.18
+
+Open [http://localhost:3000](http://localhost:3000) in your browser.
+
+### Features
+
+**Home Page:**
+- Clean, minimalist design
+- Quick search box
+- One-click site crawl button
+- Instant feedback on crawl status
+
+**Search Results:**
+- Fast, real-time search results
+- Google-like result cards with titles, URLs, and snippets
+- Clickable links to visit found pages
+- Mention count for relevance
+- Mobile-responsive design
+
+**Live Crawling:**
+- Enter any website URL
+- Crawl up to 100 pages instantly
+- Results available immediately for searching
+### 2. Command Line Search
+
+Search previously crawled data from the command line:
+
+```bash
+bun search.ts "your search query"
 ```
+
+This requires that you have already run the crawler to generate `report.json`.
+
+## Design Philosophy
+
+The web UI is designed with simplicity in mind - inspired by Google's minimalist search interface:
+
+- **Clean & Fast** - No clutter, just search and results
+- **Intuitive** - Instantly familiar to anyone who's used a search engine
+- **Mobile-First** - Responsive design works great on any device
+- **Minimal Dependencies** - Built with Vite + React for blazing-fast performance
 
 ## Development
 
-### Running Tests
+### Building the UI
+
+To rebuild the Vite app after making changes:
 
 ```bash
-bun test
+bun run ui:build
 ```
 
-### Building
+### Developing the UI
 
-The project uses TypeScript with Bun's native module resolution.
+To run the Vite dev server with hot reloading:
+
+```bash
+bun run ui:dev
+```
+
+Then access it at [http://localhost:5173](http://localhost:5173)
+
+### How the Web UI Works
+
+The web UI is built with **Vite + React** and communicates with the backend server via two APIs:
+
+1. **POST /api/crawl** - Starts a new crawl
+   - Sends domain URL and page limit
+   - Returns success/error status and page count
+   
+2. **GET /api/search** - Searches crawled pages
+   - Sends search query as URL parameter
+   - Returns matching pages sorted by relevance
+
+The server automatically caches crawled data in memory, so subsequent searches are instant.
+
 
 ## Dependencies
 
 - **Bun**: Runtime and package manager
 - **TypeScript**: Type safety
 - **JSDOM**: HTML parsing and DOM manipulation
+- **React**: UI framework
+- **Vite**: Build tool and dev server
 
 ## License
 
