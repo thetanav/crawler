@@ -1,4 +1,4 @@
-import { CheckCircle2Icon, Loader, Loader2 } from "lucide-react";
+import { CheckCircle2Icon, Loader2 } from "lucide-react";
 import { useState } from "react";
 
 export default function Crawl() {
