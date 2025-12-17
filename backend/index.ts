@@ -40,6 +40,7 @@ app.get("/search", async (c) => {
   }
 
   const results = searchPages(cachedReport, query);
+  console.log(results);
   return c.json(results);
 });
 
