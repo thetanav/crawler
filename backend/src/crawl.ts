@@ -1,5 +1,3 @@
-import { JSDOM } from "jsdom";
-
 export interface PageInfo {
   url: string;
   title: string;

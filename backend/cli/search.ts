@@ -1,5 +1,5 @@
-import { searchPages } from "./src/crawl";
-import type { SearchIndex } from "./src/crawl";
+import { searchPages } from "../src/crawl";
+import type { SearchIndex } from "../src/crawl";
 
 async function main() {
   const args = Bun.argv.slice(2);

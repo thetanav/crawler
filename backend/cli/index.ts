@@ -1,5 +1,5 @@
-import { crawlPage, getTitleMapping, searchPages } from "./src/crawl";
-import type { SearchIndex } from "./src/crawl";
+import { crawlPage, getTitleMapping, searchPages } from "../src/crawl";
+import type { SearchIndex } from "../src/crawl";
 
 function displaySearchResults(pages: SearchIndex, searchQuery: string) {
   const results = searchPages(pages, searchQuery);
