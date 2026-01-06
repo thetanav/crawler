@@ -4,8 +4,8 @@
   "type": "module",
   "private": true,
   "scripts": {
-    "dev": "bun run --watch index.ts",
-    "start": "bun index.ts",
+    "dev": "bun run --watch src/index.ts",
+    "start": "bun src/index.ts",
     "test": "bun test test/crawl.test.ts",
     "db:migrate": "bunx --bun prisma migrate dev",
     "db:generate": "bunx --bun prisma generate"
@@ -22,10 +22,9 @@
     "typescript": "^5"
   },
   "dependencies": {
-    "@prisma/adapter-pg": "^7.2.0",
+    "@prisma/adapter-better-sqlite3": "^7.2.0",
     "@prisma/client": "^7.2.0",
     "hono": "^4.11.1",
-    "jsdom": "^27.2.0",
-    "pg": "^8.16.3"
+    "jsdom": "^27.2.0"
   }
 }

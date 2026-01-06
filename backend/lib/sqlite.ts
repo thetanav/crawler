@@ -1,6 +1,6 @@
 import Database from "bun:sqlite";
 
-const db = new Database("dev.db", { create: true });
+const db = new Database("dev.db");
 
 db.exec(`
   CREATE TABLE IF NOT EXISTS crawled_sites (
@@ -36,47 +36,43 @@ export interface CrawledPage {
   updated_at: string;
 }
 
-const prisma = {
+export const dbQueries = {
   crawledSite: {
-    findUnique: async (args: { where: { url: string } }): Promise<CrawledSite | null> => {
-      const result = db.query("SELECT * FROM crawled_sites WHERE url = ?").get(args.where.url) as CrawledSite | undefined;
+    findUnique: (url: string): CrawledSite | null => {
+      const result = db.query("SELECT * FROM crawled_sites WHERE url = ?").get(url) as CrawledSite | undefined;
       return result || null;
     },
-    create: async (args: { data: { url: string } }): Promise<CrawledSite> => {
-      const id = crypto.randomUUID();
+    create: (data: { id: string; url: string }): void => {
       const now = new Date().toISOString();
       db.query("INSERT INTO crawled_sites (id, url, created_at, updated_at) VALUES (?, ?, ?, ?)").run(
-        id,
-        args.data.url,
+        data.id,
+        data.url,
         now,
         now
       );
-      return { id, url: args.data.url, created_at: now, updated_at: now };
     },
-    findMany: async (): Promise<CrawledSite[]> => {
+    findMany: (): CrawledSite[] => {
       return db.query("SELECT * FROM crawled_sites").all() as CrawledSite[];
     },
   },
   crawledPage: {
-    create: async (args: { data: { url: string; siteUrl: string; title: string } }): Promise<CrawledPage> => {
-      const id = crypto.randomUUID();
+    create: (data: { id: string; url: string; site_url: string; title: string }): void => {
       const now = new Date().toISOString();
       db.query("INSERT INTO crawled_pages (id, url, site_url, title, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?)").run(
-        id,
-        args.data.url,
-        args.data.siteUrl,
-        args.data.title,
+        data.id,
+        data.url,
+        data.site_url,
+        data.title,
         now,
         now
       );
-      return { id, url: args.data.url, site_url: args.data.siteUrl, title: args.data.title, created_at: now, updated_at: now };
     },
-    findMany: async (args?: { where?: { OR?: Array<{ url?: { contains: string }; title?: { contains: string } }> } }): Promise<CrawledPage[]> => {
-      if (!args?.where?.OR) {
+    findMany: (where?: { OR?: Array<{ url?: { contains: string }; title?: { contains: string } }> }): CrawledPage[] => {
+      if (!where || !where.OR) {
         return db.query("SELECT * FROM crawled_pages").all() as CrawledPage[];
       }
       
-      const conditions = args.where.OR
+      const conditions = where.OR
         .map((condition) => {
           const urlCondition = condition.url?.contains ? `url LIKE '%${condition.url.contains}%'` : "";
           const titleCondition = condition.title?.contains ? `title LIKE '%${condition.title.contains}%'` : "";
@@ -94,9 +90,6 @@ const prisma = {
       return db.query(query).all() as CrawledPage[];
     },
   },
-  $disconnect: async () => {
-    db.close();
-  },
 };
 
-export { prisma };
+export { db };

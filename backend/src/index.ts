@@ -1,25 +1,16 @@
 import { Hono } from "hono";
 import { cors } from "hono/cors";
-import { searchPages, crawlPage } from "./src/crawl";
-import type { SearchIndex } from "./src/crawl";
-
-async function loadReportData(): Promise<SearchIndex | null> {
-  const reportFile = Bun.file("report.json");
-  if (!(await reportFile.exists())) {
-    return null;
-  }
-  return await reportFile.json();
-}
+import { crawlPage } from "./crawl";
+import type { SearchIndex } from "./crawl";
+import { prisma } from "../lib/prisma";
 
 const app = new Hono();
-
-// Load report data once at startup
-let cachedReport: SearchIndex | null = null;
 
 // CORS middleware for port 5173
 app.use("*", cors({ origin: "http://localhost:5173" }));
 
 // Search endpoint
+// TODO: add pagination for all queries
 app.get("/search", async (c) => {
   const query = c.req.query("q");
 
@@ -27,36 +18,53 @@ app.get("/search", async (c) => {
     return c.json({ error: "Query parameter 'q' is required" }, 400);
   }
 
-  // Load report data if not cached
-  if (!cachedReport) {
-    cachedReport = await loadReportData();
-  }
+  const results = await prisma.crawledPage.findMany({
+    where: {
+      OR: [
+        {
+          url: {
+            contains: query,
+          },
+        },
+        {
+          title: {
+            contains: query,
+          },
+        },
+      ],
+    },
+  });
 
-  if (!cachedReport) {
-    return c.json(
-      { error: "No report data found. Please run the crawler first." },
-      404
-    );
-  }
-
-  const results = searchPages(cachedReport, query);
   return c.json(results);
 });
 
 // Crawl endpoint
 app.post("/crawl", async (c) => {
+  const body = await c.req.json();
+  const { url: crawlUrl, limit = 100 } = body as {
+    url?: string;
+    limit?: number;
+  };
+
+  if (!crawlUrl || !crawlUrl.startsWith("http")) {
+    return c.json({ error: "URL is required" }, 400);
+  }
+
   try {
-    const body = await c.req.json();
-    const { url: crawlUrl, limit = 100 } = body as {
-      url?: string;
-      limit?: number;
-    };
+    const crawled = await prisma.crawledSite.findUnique({
+      where: {
+        url: crawlUrl,
+      },
+    });
 
-    if (!crawlUrl || !crawlUrl.startsWith("http")) {
-      return c.json({ error: "URL is required" }, 400);
-    }
+    if (crawled) return c.json({ error: "URL already crawled" }, 400);
 
-    console.log(`Starting crawl of ${crawlUrl} with limit ${limit}`);
+    console.log(`> Starting crawl of ${crawlUrl} with limit ${limit}`);
+    await prisma.crawledSite.create({
+      data: {
+        url: crawlUrl,
+      },
+    });
     const startTime = performance.now();
     const pages = await crawlPage(crawlUrl, crawlUrl, {}, limit);
     const endTime = performance.now();
@@ -64,9 +72,7 @@ app.post("/crawl", async (c) => {
 
     // Save the crawled data
     await Bun.write("report.json", JSON.stringify(pages, null, 2));
-
-    // Update the cached report
-    cachedReport = pages;
+    // remove it in future
 
     console.log(
       `Crawl complete: ${
@@ -88,6 +94,11 @@ app.post("/crawl", async (c) => {
       500
     );
   }
+});
+
+app.get("/done", async (c) => {
+  const done = await prisma.crawledSite.findMany();
+  return c.json({ data: done });
 });
 
 export default app;

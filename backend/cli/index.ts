@@ -1,4 +1,4 @@
-import { crawlPage, getTitleMapping, searchPages } from "../src/crawl";
+import { crawlPage, getTitleMapping, searchPages, disconnectDB } from "../src/crawl";
 import type { SearchIndex } from "../src/crawl";
 
 function displaySearchResults(pages: SearchIndex, searchQuery: string) {
@@ -84,6 +84,8 @@ async function main() {
   if (searchQuery) {
     displaySearchResults(pages, searchQuery);
   }
+  
+  await disconnectDB();
 }
 
 main();

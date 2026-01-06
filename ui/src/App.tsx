@@ -6,9 +6,11 @@ export default function App() {
   const [term, setTerm] = useState("");
   const [result, setResult] = useState<
     | {
+        id: string;
         url: string;
         title: string;
-        count: number;
+        siteUrl: string;
+        createdAt: string;
       }[]
     | null
   >(null);
@@ -41,9 +43,9 @@ export default function App() {
       {result && result.length > 0 && (
         <div className="w-[55vw] mt-6">
           <div className="border border-neutral-300 rounded-lg overflow-hidden">
-            {result.map((item, index) => (
+            {result.map((item) => (
               <a
-                key={index}
+                key={item.id}
                 href={item.url}
                 target="_blank"
                 rel="noopener noreferrer"
@@ -51,7 +53,7 @@ export default function App() {
                 <h3 className="font-semibold text-neutral-900">{item.title}</h3>
                 <p className="text-sm text-neutral-600 truncate">{item.url}</p>
                 <p className="text-xs text-neutral-500 mt-1">
-                  {item.count} occurrences
+                  {new Date(item.createdAt).toLocaleString()}
                 </p>
               </a>
             ))}
