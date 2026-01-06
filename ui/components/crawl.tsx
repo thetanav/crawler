@@ -1,4 +1,4 @@
-import { CheckCircle2Icon, Loader2 } from "lucide-react";
+import { Bot, CheckCircle2Icon, Loader2 } from "lucide-react";
 import { useState } from "react";
 
 export default function Crawl() {
@@ -29,34 +29,39 @@ export default function Crawl() {
   }
 
   return (
-    <div className="absolute bottom-6 right-0 left-0 flex items-center justify-center">
+    <div className="flex items-center justify-center px-4 py-2 w-full border border-neutral-300 rounded-full">
       {loading ? (
-        <p className="text-xs flex items-center justify-center gap-2">
+        <p className="text-md flex items-center justify-center gap-2">
           <Loader2 className="w-4 h-4 animate-spin" />
           crawling
         </p>
       ) : (
         <>
           {result && result.success ? (
-            <p className="text-xs text-neutral-500 mt-2 flex items-center justify-center gap-2">
+            <p className="text-md text-neutral-500 mt-2 flex items-center justify-center gap-2">
               <CheckCircle2Icon className="w-4" />
               scraped {result.pagesCount} pages in {result.timeTaken}s
             </p>
           ) : (
-            <div className="flex items-center justify-center">
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                crawl();
+              }}
+              className="flex items-center justify-center w-full">
               <input
                 value={url}
                 onChange={(e) => setUrl(e.target.value)}
                 type="text"
-                placeholder="target site url"
-                className="outline-none text-xs w-96"
+                placeholder="url"
+                className="outline-none text-md w-full"
               />
               <button
-                onClick={() => crawl()}
-                className="text-xs text-neutral-600 hover:text-neutral-900 cursor-pointer">
-                scrape
+                type="submit"
+                className="text-md text-neutral-600 hover:text-neutral-900 cursor-pointer flex gap-1 items-center justify-center">
+                Scrape
               </button>
-            </div>
+            </form>
           )}
         </>
       )}
