@@ -19,7 +19,7 @@ export function normalizeURL(url: string): string {
 
 export async function getPageTitle(htmlBody: string): Promise<string> {
   let title = "";
-  await new HTMLRewriter()
+  new HTMLRewriter()
     .on("title", {
       text(text) {
         title += text.text;
@@ -33,7 +33,7 @@ export async function getURLsFromHTML(htmlBody: string, baseURL: string) {
   const urls: string[] = [];
   // Ensure baseURL doesn't end with a slash for proper concatenation
   const base = baseURL.endsWith("/") ? baseURL.slice(0, -1) : baseURL;
-  await new HTMLRewriter()
+  new HTMLRewriter()
     .on("a", {
       element(el) {
         let href = el.getAttribute("href");
