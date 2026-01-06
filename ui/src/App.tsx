@@ -76,16 +76,15 @@ export default function App() {
                 href={item.url}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="p-4 border-b border-neutral-300 last:border-b-0 hover:bg-neutral-50 transition-color -fulls flex items-center gap-2">
-                <img
-                  src="https://placehold.co/200x200"
-                  alt="placeholder"
-                  className="h-10 rounded-full"
-                />
-                <div className="flex flex-col">
-                  <h3 className="font-semibold text-neutral-900">
-                    {item.title}
-                  </h3>
+                className="p-4 border-b border-neutral-300 last:border-b-0 hover:bg-neutral-50 transition-color -fulls flex flex-col">
+                <h3 className="font-semibold text-neutral-900">{item.title}</h3>
+                <div className="flex gap-1">
+                  <img
+                    src={`https://www.google.com/s2/favicons?domain=${
+                      new URL(item.url).hostname
+                    }`}
+                    className="h-5"
+                  />
                   <p className="text-sm text-neutral-600 truncate">
                     {item.url}
                   </p>

@@ -58,6 +58,10 @@ const prisma = {
     },
   },
   crawledPage: {
+    findUnique: async (args: { where: { url: string } }): Promise<CrawledPage | null> => {
+      const result = db.query("SELECT * FROM crawled_pages WHERE url = ?").get(args.where.url) as CrawledPage | undefined;
+      return result || null;
+    },
     create: async (args: { data: { url: string; siteUrl: string; title: string } }): Promise<CrawledPage> => {
       const id = crypto.randomUUID();
       const now = new Date().toISOString();
