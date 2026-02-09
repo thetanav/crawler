@@ -1,5 +1,3 @@
-import { prisma } from "../lib/prisma";
-
 export interface PageInfo {
   url: string;
   title: string;
@@ -8,6 +6,16 @@ export interface PageInfo {
 
 export interface SearchIndex {
   [normalizedUrl: string]: PageInfo;
+}
+
+let prismaPromise: Promise<import("../generated/prisma/client").PrismaClient> | null =
+  null;
+
+async function getPrismaClient() {
+  if (!prismaPromise) {
+    prismaPromise = import("../lib/prisma").then((mod) => mod.prisma);
+  }
+  return prismaPromise;
 }
 
 export function normalizeURL(url: string): string {
@@ -75,6 +83,7 @@ export async function crawlPage(
   pages: SearchIndex,
   limit: number = 100
 ): Promise<SearchIndex> {
+  const prisma = await getPrismaClient();
   const queue = [currentURL];
 
   while (queue.length > 0 && Object.keys(pages).length < limit) {
@@ -97,7 +106,7 @@ export async function crawlPage(
         }
         
         const existing = await prisma.crawledPage.findUnique({
-          where: { url: current }
+          where: { url: current },
         });
         if (existing) {
           console.log(`Skipping ${current} - already in database`);
@@ -115,7 +124,9 @@ export async function crawlPage(
           }
           const htmlBody = await res.text();
           const title = await getPageTitle(htmlBody);
-          console.log(`Crawled: ${current} - "${title}" (${Object.keys(pages).length}/${limit} pages)`)
+          console.log(
+            `Crawled: ${current} - "${title}" (${Object.keys(pages).length}/${limit} pages)`
+          );
 
           pages[normalizedCurrentURL] = {
             url: current,
@@ -149,4 +160,31 @@ export async function crawlPage(
     );
   }
   return pages;
+}
+
+export function getTitleMapping(pages: SearchIndex): Record<string, string> {
+  const mapping: Record<string, string> = {};
+  for (const page of Object.values(pages)) {
+    mapping[page.title] = page.url;
+  }
+  return mapping;
+}
+
+export function searchPages(pages: SearchIndex, query: string): PageInfo[] {
+  const normalized = query.trim().toLowerCase();
+  if (!normalized) {
+    return [];
+  }
+
+  return Object.values(pages)
+    .filter((page) => page.title.toLowerCase().includes(normalized))
+    .sort((a, b) => {
+      if (b.count !== a.count) return b.count - a.count;
+      return a.title.localeCompare(b.title);
+    });
+}
+
+export async function disconnectDB() {
+  const prisma = await getPrismaClient();
+  await prisma.$disconnect();
 }

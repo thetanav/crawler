@@ -1,10 +1,11 @@
 import { Hono } from "hono";
 import { cors } from "hono/cors";
 import { crawlPage } from "./crawl";
-import type { SearchIndex } from "./crawl";
 import { prisma } from "../lib/prisma";
 
 const app = new Hono();
+const SEARCH_PAGE_SIZE = 10;
+const DEFAULT_CRAWL_LIMIT = 100;
 
 // CORS middleware for port 5173
 app.use("*", cors({ origin: "http://localhost:5173" }));
@@ -13,25 +14,23 @@ app.use("*", cors({ origin: "http://localhost:5173" }));
 // TODO: add pagination for all queries
 app.get("/search", async (c) => {
   const query = c.req.query("q");
+  const pageParam = c.req.query("p");
+  const page = Number.parseInt(pageParam ?? "1", 10);
 
   if (!query) {
     return c.json({ error: "Query parameter 'q' is required" }, 400);
   }
+  if (!Number.isFinite(page) || page < 1) {
+    return c.json({ error: "Query parameter 'p' must be a positive integer" }, 400);
+  }
 
   const results = await prisma.crawledPage.findMany({
+    skip: (page - 1) * SEARCH_PAGE_SIZE,
+    take: SEARCH_PAGE_SIZE,
     where: {
-      OR: [
-        {
-          url: {
-            contains: query,
-          },
-        },
-        {
-          title: {
-            contains: query,
-          },
-        },
-      ],
+      title: {
+        contains: query,
+      },
     },
   });
 
@@ -40,14 +39,23 @@ app.get("/search", async (c) => {
 
 // Crawl endpoint
 app.post("/crawl", async (c) => {
-  const body = await c.req.json();
-  const { url: crawlUrl, limit = 100 } = body as {
+  let body: unknown;
+  try {
+    body = await c.req.json();
+  } catch {
+    return c.json({ error: "Invalid JSON body" }, 400);
+  }
+
+  const { url: crawlUrl, limit: crawlLimit = DEFAULT_CRAWL_LIMIT } = body as {
     url?: string;
     limit?: number;
   };
 
   if (!crawlUrl || !crawlUrl.startsWith("http")) {
-    return c.json({ error: "URL is required" }, 400);
+    return c.json({ error: "A valid URL is required" }, 400);
+  }
+  if (!Number.isFinite(crawlLimit) || crawlLimit < 1) {
+    return c.json({ error: "Limit must be a positive integer" }, 400);
   }
 
   try {
@@ -59,14 +67,14 @@ app.post("/crawl", async (c) => {
 
     if (crawled) return c.json({ error: "URL already crawled" }, 400);
 
-    console.log(`> Starting crawl of ${crawlUrl} with limit ${limit}`);
+    console.log(`> Starting crawl of ${crawlUrl} with limit ${crawlLimit}`);
     await prisma.crawledSite.create({
       data: {
         url: crawlUrl,
       },
     });
     const startTime = performance.now();
-    const pages = await crawlPage(crawlUrl, crawlUrl, {}, limit);
+    const pages = await crawlPage(crawlUrl, crawlUrl, {}, crawlLimit);
     const endTime = performance.now();
     const timeTaken = (endTime - startTime) / 1000;
 

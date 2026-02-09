@@ -8,17 +8,25 @@ datasource db {
 }
 
 model CrawledSite {
-  id        String   @id @default(uuid())
-  url       String   @unique
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id        String         @id @default(uuid())
+  url       String         @unique
+  pages     CrawledPage[]
+  createdAt DateTime       @default(now())
+  updatedAt DateTime       @updatedAt
+
+  @@index([createdAt])
 }
 
 model CrawledPage {
-  id        String   @id @default(uuid())
-  url       String   @unique
+  id        String       @id @default(uuid())
+  url       String       @unique
   siteUrl   String
   title     String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  site      CrawledSite? @relation(fields: [siteUrl], references: [url], onDelete: Cascade)
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
+
+  @@index([siteUrl])
+  @@index([title])
+  @@index([createdAt])
 }
